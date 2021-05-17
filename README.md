@@ -6,6 +6,6 @@ To make this work on your local, please make sure the below libs are installed:
 3. requests
 
 To install these packages, use below commands: 
-pip3 install beautifulsoup
-pip3 install lxml
-pip3 install requests
+1. pip3 install beautifulsoup
+2. pip3 install lxml
+3. pip3 install requests

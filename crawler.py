@@ -5,7 +5,8 @@ from bs4 import BeautifulSoup
 import time
 
 class Crawler:
-    
+    proxy_pool = {"http": "201.69.7.108:9000", 
+                    "http": "222.92.112.66:8080"}
     # TODO: use proxies
 
     # TODO: support regex search
@@ -28,10 +29,12 @@ class Crawler:
 
     page_regex = re.compile("page=.*")
 
-    def __init__(self) -> None:
-        pass
+    def __init__(self, use_proxy=False) -> None:
+        self.use_proxy = use_proxy
     
     def _get_url_content(self, url) -> Response:
+        if self.use_proxy:
+            return requests.get(url=url, headers=Crawler.fake_header, proxies=Crawler.proxy_pool)
         return requests.get(url=url, headers=Crawler.fake_header)
     
     # This is not a thread safe method

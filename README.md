@@ -9,3 +9,9 @@ To install these packages, use below commands:
 1. pip3 install beautifulsoup
 2. pip3 install lxml
 3. pip3 install requests
+
+To start using it, run with the following command:
+
+python3 user_prompt.py
+
+It will prompt to input the info it wants to search for job referrals.

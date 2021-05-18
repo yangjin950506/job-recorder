@@ -10,6 +10,9 @@ To install these packages, use below commands:
 2. pip3 install lxml
 3. pip3 install requests
 
+Or simply run the below command:
+pip3 install -r requirements.txt 
+
 To start using it, run with the following command:
 
 python3 user_prompt.py

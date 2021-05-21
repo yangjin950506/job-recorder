@@ -18,10 +18,16 @@ while True:
 
     pages = input("Please input how many pages do you want to search: ")
     pages=int(pages)
-
+    start_page = input("Please input the starting page you want to search: ")
+    start_page = int(start_page)
     cw = Crawler(use_proxy_flag)
-    results = cw.find_all_within_pages(search_type, target_companies, pages)
-
+    result = []
+    
+    if start_page == 1:
+        results = cw.find_all_within_pages(search_type, target_companies, pages)
+    else:
+        results = cw.find_all_with_range(search_type, target_companies, start_page, start_page + pages)
+    
     for job in results:
         print('{0:<100} 论坛链接：{1:<50}'.format(*job))
         

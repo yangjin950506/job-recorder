@@ -5,6 +5,8 @@ import re
 from bs4 import BeautifulSoup
 import time
 from search_type import SearchType
+import os
+from multiprocessing import Pool
 
 class Crawler:
     proxy_pool = {"http": "201.69.7.108:9000", 
@@ -12,6 +14,12 @@ class Crawler:
     # TODO: use proxies
 
     # TODO: support regex search
+
+    # TODO: support drill down on different sections of interview page
+
+    # TODO: interactive interface to select
+
+    # TODO: remember the last search input
 
     # TODO: multi thread on the page pulling
 
@@ -29,14 +37,17 @@ class Crawler:
 
     tag = "a"
 
+    pool_size = 20
+
     job_seek_first_page = "https://www.1point3acres.com/bbs/forum-198-1.html"
 
-    interview_experience_first_page = "https://www.1point3acres.com/bbs/forum-145-1.html"
+    interview_experience_first_page = "https://www.1point3acres.com/bbs/forum-259-1.html"
 
     page_regex = re.compile("page=.*")
 
     def __init__(self, use_proxy=False) -> None:
         self.use_proxy = use_proxy
+        self.pool = Pool(processes=Crawler.pool_size)
     
     """
     Generic method to get the content(HTML) of a url
@@ -93,30 +104,56 @@ class Crawler:
 
     """
     Generic method to find target company related posts in a given url/page
-    Return the post name and its hyper link
+    Args:
+        url: the forum page to search
+        target_companies: list of companies that user wants to find
+    Return:
+        List of tuples (Title, Link to Page)
     """
     def find_target_link(self, url, target_companies) -> List:
         resp = self._get_url_content(url)
         soup = BeautifulSoup(resp.content, "lxml")
+        print(os.getpid(), " is searching")
         ret = []
         for item in soup.body.findAll(Crawler.tag, Crawler.thread_param):
             for target_company in target_companies:
                 if target_company in item.text:
                     ret.append( (item.text, Crawler.prefix + item['href']) )
+        print(os.getpid(), " completes searching")
         return ret
 
 
     def find_all_within_pages(self, search_type, target_companies, pages) -> List:
+        return self.find_all_with_range(search_type, target_companies, 1, 1 + pages)
+
+    """
+    Search all pages within range [from_page, to_page]. The searching on each page within this
+    range will be spread among different threads and get aggregated together at the end of this
+    function.
+    Args:
+        search_type: enum type, two categories: job seek or interview
+        target_companies: list of companies that user wants to find
+        from_page: starting page num
+        to_page: ending page num
+    Return:
+        List of tuples (Title, Link to Page)
+    """
+    def find_all_with_range(self, search_type, target_companies, from_page, to_page) -> List:
         links = []
-        for i in range(1, pages + 1):
-            print("Searching in page: ", i)
+        results = [] # used to hold async result objects
+        
+        for i in range(from_page, to_page + 1):
             page_url = None
+
             if search_type is SearchType.JOB_SEEK:
                 page_url = self._jump_to_page(i, self._get_job_page_template)
             elif search_type is SearchType.INTERVIEW:
                 page_url = self._jump_to_page(i, self._get_interview_page_template)
-            links.extend(self.find_target_link(page_url, target_companies))
-            print("page ", i, " searching done")
-            # time.sleep(1) # prevent too frequent visits
+
+            result = self.pool.apply_async(self.find_target_link, (page_url, target_companies))
+            results.append(result)
+
         print("Aggregating results...")
+        for r in results:
+            links.extend(r.get())
         return links

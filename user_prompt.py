@@ -31,7 +31,7 @@ while True:
     for job in results:
         print('{0:<100} 论坛链接：{1:<50}'.format(*job))
         
-    if (len(results) == 0):
+    if len(results) == 0:
         print("No result found for ", target_companies)
     conti = input("Continue? (Y/N) ")
     if conti == "Y" or conti == "YES":

@@ -8,9 +8,10 @@ from search_type import SearchType
 import os
 from multiprocessing import Pool
 
+
 class Crawler:
-    proxy_pool = {"http": "201.69.7.108:9000", 
-                    "http": "222.92.112.66:8080"}
+    proxy_pool = {"http": "201.69.7.108:9000",
+                  "http": "222.92.112.66:8080"}
     # TODO: use proxies
 
     # TODO: support regex search
@@ -48,26 +49,27 @@ class Crawler:
     def __init__(self, use_proxy=False) -> None:
         self.use_proxy = use_proxy
         self.pool = Pool(processes=Crawler.pool_size)
-    
+
     """
     Generic method to get the content(HTML) of a url
     """
+
     def _get_url_content(self, url) -> Response:
         if self.use_proxy:
             return requests.get(url=url, headers=Crawler.fake_header, proxies=Crawler.proxy_pool)
         return requests.get(url=url, headers=Crawler.fake_header)
-    
 
     """
     Get the job seek page template to do pagination
     """
+
     # This is not a thread safe method
     def _get_job_page_template(self) -> str:
         if not Crawler.job_seek_page_url_template:
             resp = self._get_url_content(Crawler.job_seek_first_page)
             soup = BeautifulSoup(resp.content, "lxml")
-            page_column = soup.body.findAll("div", {"class":"pg"})
-            if( len(page_column) > 0):
+            page_column = soup.body.findAll("div", {"class": "pg"})
+            if len(page_column) > 0:
                 page_column = page_column[0]
             else:
                 raise RuntimeError("page column not found")
@@ -78,13 +80,14 @@ class Crawler:
     """
     Get the interview experience page template to do pagination
     """
+
     def _get_interview_page_template(self) -> str:
         # if not set already, then set the template
         if not Crawler.interview_experience_url_template:
             resp = self._get_url_content(Crawler.interview_experience_first_page)
             soup = BeautifulSoup(resp.content, "lxml")
-            page_column = soup.body.findAll("div", {"class":"pg"})
-            if( len(page_column) > 0):
+            page_column = soup.body.findAll("div", {"class": "pg"})
+            if len(page_column) > 0:
                 page_column = page_column[0]
             else:
                 raise RuntimeError("page column not found")
@@ -97,6 +100,7 @@ class Crawler:
     page_num : the destination page num starting from 1
     get_page_func : which page is jump here. Only two options : job seek and interview experience
     """
+
     def _jump_to_page(self, page_num, get_page_func) -> str:
         page = get_page_func()
         target_page = re.sub(Crawler.page_regex, "page=" + str(page_num), page)
@@ -110,6 +114,7 @@ class Crawler:
     Return:
         List of tuples (Title, Link to Page)
     """
+
     def find_target_link(self, url, target_companies) -> List:
         resp = self._get_url_content(url)
         soup = BeautifulSoup(resp.content, "lxml")
@@ -118,10 +123,9 @@ class Crawler:
         for item in soup.body.findAll(Crawler.tag, Crawler.thread_param):
             for target_company in target_companies:
                 if target_company in item.text:
-                    ret.append( (item.text, Crawler.prefix + item['href']) )
+                    ret.append((item.text, Crawler.prefix + item['href']))
         print(os.getpid(), " completes searching")
         return ret
-
 
     def find_all_within_pages(self, search_type, target_companies, pages) -> List:
         return self.find_all_with_range(search_type, target_companies, 1, 1 + pages)
@@ -138,10 +142,11 @@ class Crawler:
     Return:
         List of tuples (Title, Link to Page)
     """
+
     def find_all_with_range(self, search_type, target_companies, from_page, to_page) -> List:
         links = []
-        results = [] # used to hold async result objects
-        
+        results = []  # used to hold async result objects
+
         for i in range(from_page, to_page + 1):
             page_url = None
 
@@ -157,3 +162,11 @@ class Crawler:
         for r in results:
             links.extend(r.get())
         return links
+
+    def __getstate__(self):
+        self_dict = self.__dict__.copy()
+        del self_dict['pool']
+        return self_dict
+
+    def __setstate__(self, state):
+        self.__dict__.update(state)
